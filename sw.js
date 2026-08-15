@@ -1,5 +1,5 @@
-const CACHE_NAME = 'sideline-cache-v1';
-const FILES_TO_CACHE = ['/', '/index.html', '/icon.svg', '/site.webmanifest'];
+const CACHE_NAME = 'sideline-cache-v2';
+const FILES_TO_CACHE = ['./', './index.html', './logo.png', './icon.svg', './icon-192.png', './icon-512.png', './apple-touch-icon.png'];
 self.addEventListener('install', event => {
   event.waitUntil(caches.open(CACHE_NAME).then(cache => cache.addAll(FILES_TO_CACHE)));
   self.skipWaiting();
