@@ -8,6 +8,14 @@
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
   <meta name="apple-mobile-web-app-title" content="Stat Tracker" />
   <title>Sideline Stat Tracker</title>
+  <!-- PWA / Home Screen icons & manifest -->
+  <link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png">
+  <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32x32.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="/favicon-16x16.png">
+  <link rel="icon" type="image/png" sizes="192x192" href="/icon-192.png">
+  <link rel="icon" type="image/png" sizes="512x512" href="/icon-512.png">
+  <link rel="manifest" href="/site.webmanifest">
+  <meta name="theme-color" content="#0f172a">
   <style>
     :root {
       --home-primary: #1e3a8a;
@@ -40,7 +48,7 @@
     .hidden-color-input { position: absolute; width: 1px; height: 1px; opacity: 0; pointer-events: none; }
     .play-entry-box { padding: 15px; display: flex; flex-direction: column; gap: 12px; }
     .input-row { display: flex; gap: 8px; flex-wrap: wrap; }
-    .input-row input { padding: 10px; border-radius: 6px; border: 1px solid var(--border-color); background: #0f172a; color: #fff; flex: 1 1 120px; text-align: center; min-width: 0; font-size: 0.95rem; }
+    .input-row input { padding: 10px; border-radius: 6px; border: 1px solid var(--border-color); background: #0f172a; color: #fff; flex: 1 1 120px; text-align: center; min-width: 0; font-size: 0.9rem; }
     .play-type-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
     .btn-play { padding: 10px 5px; border: none; border-radius: 6px; font-weight: bold; cursor: pointer; color: white; font-size: 0.8rem; word-break: break-word; }
     .team-card.home .btn-play { background-color: var(--home-secondary); }
@@ -68,7 +76,7 @@
     th, td { padding: 8px 6px; border-bottom: 1px solid var(--border-color); }
     .bottom-actions { margin-top: 20px; text-align: center; }
     .modal-overlay { display: none; position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0, 0, 0, 0.75); z-index: 1000; justify-content: center; align-items: center; padding: 20px; }
-    .modal-card { background-color: var(--card-bg); border: 2px solid var(--away-secondary); border-radius: 12px; padding: 20px; max-width: 400px; width: 100%; text-align: center; box-shadow: 0 10px 25px rgba(0,0,0,0.5); }
+    .modal-card { background-color: var(--card-bg); border: 2px solid var(--away-secondary); border-radius: 12px; padding: 20px; max-width: 400px; width: 100%; text-align: center; box-shadow: 0 10px 30px rgba(0,0,0,0.6); }
     .modal-card h3 { margin-bottom: 10px; color: #f8fafc; }
     .modal-card p { margin-bottom: 20px; color: var(--text-muted); font-size: 0.95rem; line-height: 1.4; }
     .modal-btns { display: flex; gap: 10px; justify-content: center; }
@@ -464,7 +472,7 @@
           });
         });
       } else {
-        output = `GAME STATS & PLAYER BOX SCORE\n========================================\n${gameData.home.name.toUpperCase()}: ${gameData.home.score} PTS\n----------------------------------------\n`;
+        output = `GAME STATS & PLAYER BOX SCORE\n========================================\n${gameData.home.name.toUpperCase()}: ${gameData.home.score} PTS\n---------------------------------------\n`;
         Object.keys(gameData.home.players).forEach(p => {
           const s = gameData.home.players[p];
           output += `Player ${p}: ${s.comp}/${s.att} Pass, ${s.passYards} Yds | ${s.rush} Rush, ${s.rushYards} Yds | ${s.tds} TD | ${s.ints} INT\n`;
@@ -486,6 +494,18 @@
         prompt("Copy your game stats below:", output);
       }
     }
+  </script>
+
+  <!-- PWA: register service worker & capture install prompt -->
+  <script>
+    if ('serviceWorker' in navigator) {
+      navigator.serviceWorker.register('/sw.js').catch(err => console.log('SW registration failed:', err));
+    }
+    let deferredPrompt;
+    window.addEventListener('beforeinstallprompt', (e) => {
+      e.preventDefault();
+      deferredPrompt = e; // save it to trigger later from your UI
+    });
   </script>
 </body>
 </html>
