@@ -1,0 +1,491 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+  <meta name="apple-mobile-web-app-title" content="Stat Tracker" />
+  <title>Sideline Stat Tracker</title>
+  <style>
+    :root {
+      --home-primary: #1e3a8a;
+      --home-secondary: #3b82f6;
+      --away-primary: #991b1b;
+      --away-secondary: #ef4444;
+      --bg-color: #0f172a;
+      --card-bg: #1e293b;
+      --text-main: #f8fafc;
+      --text-muted: #94a3b8;
+      --border-color: #334155;
+      --td-green: #16a34a;
+      --turnover-orange: #ea580c;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; font-family: sans-serif; }
+    body { background-color: var(--bg-color); color: var(--text-main); padding: 15px; max-width: 1200px; margin: 0 auto; min-height: 100vh; }
+    header { text-align: center; padding: 15px 0; margin-bottom: 15px; border-bottom: 2px solid var(--border-color); }
+    h1 { font-size: 1.8rem; text-transform: uppercase; color: #f1f5f9; }
+    .scoreboard { display: grid; grid-template-columns: repeat(auto-fit, minmax(320px, 1fr)); gap: 15px; margin-bottom: 20px; }
+    .team-card { background-color: var(--card-bg); border-radius: 12px; overflow: hidden; border: 2px solid transparent; min-width: 0; }
+    .team-card.home { border-color: var(--home-secondary); }
+    .team-card.away { border-color: var(--away-secondary); }
+    .team-header { padding: 12px; text-align: center; color: white; font-weight: bold; }
+    .team-card.home .team-header { background-color: var(--home-primary); }
+    .team-card.away .team-header { background-color: var(--away-primary); }
+    .score-display { font-size: 3rem; font-weight: 800; }
+    .team-name-label { display: inline-block; cursor: pointer; }
+    .team-name { padding: 4px 10px; border-radius: 6px; border: 1px dashed rgba(255,255,255,0.5); transition: background-color 0.15s; }
+    .team-name-label:hover .team-name { background-color: rgba(255,255,255,0.15); }
+    .hidden-color-input { position: absolute; width: 1px; height: 1px; opacity: 0; pointer-events: none; }
+    .play-entry-box { padding: 15px; display: flex; flex-direction: column; gap: 12px; }
+    .input-row { display: flex; gap: 8px; flex-wrap: wrap; }
+    .input-row input { padding: 10px; border-radius: 6px; border: 1px solid var(--border-color); background: #0f172a; color: #fff; flex: 1 1 120px; text-align: center; min-width: 0; font-size: 0.95rem; }
+    .play-type-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+    .btn-play { padding: 10px 5px; border: none; border-radius: 6px; font-weight: bold; cursor: pointer; color: white; font-size: 0.8rem; word-break: break-word; }
+    .team-card.home .btn-play { background-color: var(--home-secondary); }
+    .team-card.away .btn-play { background-color: var(--away-secondary); }
+    .btn-play.td-btn { background-color: var(--td-green) !important; }
+    .btn-play.turnover-btn { background-color: var(--turnover-orange) !important; }
+    .btn-play.neutral-btn { background-color: #475569 !important; }
+    .btn-play.full-width { grid-column: span 2; }
+    .actions-panel { background-color: var(--card-bg); border-radius: 10px; padding: 15px; border: 1px solid var(--border-color); margin-bottom: 20px; }
+    .actions-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; flex-wrap: wrap; gap: 10px; }
+    .action-btns { display: flex; gap: 8px; flex-wrap: wrap; }
+    .action-btn { padding: 8px 14px; border-radius: 6px; border: none; font-weight: 600; cursor: pointer; color: white; font-size: 0.85rem; }
+    .action-btn.reset { background-color: #b91c1c; width: 100%; padding: 14px; font-size: 1.1rem; margin-top: 20px; }
+    .action-btn.export { background-color: #15803d; }
+    .action-btn.export-secondary { background-color: #0369a1; }
+    .log-list { list-style: none; max-height: 220px; overflow-y: auto; border: 1px solid var(--border-color); border-radius: 6px; padding: 8px; background: #0f172a; font-family: monospace; }
+    .log-item { padding: 8px 10px; border-radius: 5px; background: #1e293b; display: flex; align-items: center; gap: 10px; margin-bottom: 6px; font-size: 0.85rem; flex-wrap: wrap; }
+    .log-team-tag { flex-shrink: 0; padding: 3px 8px; border-radius: 4px; font-size: 0.72rem; font-weight: bold; color: white; text-transform: uppercase; letter-spacing: 0.02em; }
+    .log-desc { flex: 1 1 auto; min-width: 0; }
+    .btn-delete-log { background: #b91c1c; color: white; border: none; padding: 4px 8px; border-radius: 4px; cursor: pointer; font-size: 0.75rem; font-weight: bold; }
+    .stats-summary-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(320px, 1fr)); gap: 15px; margin-bottom: 20px; }
+    .player-table-box { background-color: var(--card-bg); border-radius: 10px; padding: 15px; border: 1px solid var(--border-color); overflow-x: auto; min-width: 0; }
+    .player-table-box h3 { margin-bottom: 10px; }
+    table { width: 100%; border-collapse: collapse; font-size: 0.85rem; text-align: left; white-space: nowrap; }
+    th, td { padding: 8px 6px; border-bottom: 1px solid var(--border-color); }
+    .bottom-actions { margin-top: 20px; text-align: center; }
+    .modal-overlay { display: none; position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0, 0, 0, 0.75); z-index: 1000; justify-content: center; align-items: center; padding: 20px; }
+    .modal-card { background-color: var(--card-bg); border: 2px solid var(--away-secondary); border-radius: 12px; padding: 20px; max-width: 400px; width: 100%; text-align: center; box-shadow: 0 10px 25px rgba(0,0,0,0.5); }
+    .modal-card h3 { margin-bottom: 10px; color: #f8fafc; }
+    .modal-card p { margin-bottom: 20px; color: var(--text-muted); font-size: 0.95rem; line-height: 1.4; }
+    .modal-btns { display: flex; gap: 10px; justify-content: center; }
+    .modal-btn { flex: 1; padding: 12px; border-radius: 6px; border: none; font-weight: bold; cursor: pointer; }
+    .modal-btn.confirm { background-color: #b91c1c; color: white; }
+    .modal-btn.cancel { background-color: #475569; color: white; }
+  </style>
+</head>
+<body>
+  <header>
+    <h1>Sideline Stat Tracker</h1>
+  </header>
+
+  <div class="scoreboard">
+    <!-- HOME TEAM -->
+    <div class="team-card home">
+      <div class="team-header">
+        <label class="team-name-label" for="home-color-primary">
+          <div class="team-name" id="home-display-name">Leland Chargers</div>
+        </label>
+        <input type="color" id="home-color-primary" class="hidden-color-input" value="#1e3a8a" onchange="updateTeamColor('home', this.value)">
+        <div class="score-display" id="home-score">0</div>
+      </div>
+      <div class="play-entry-box">
+        <div class="input-row">
+          <input type="number" id="home-player" placeholder="Player #">
+          <input type="number" id="home-yards" placeholder="Yards">
+        </div>
+        <div class="play-type-grid">
+          <button class="btn-play" type="button" onclick="recordPlay('home', 'pass-comp')">PASS COMP</button>
+          <button class="btn-play neutral-btn" type="button" onclick="recordPlay('home', 'pass-inc')">PASS INC</button>
+          <button class="btn-play" type="button" onclick="recordPlay('home', 'rush')">RUN</button>
+          <button class="btn-play td-btn" type="button" onclick="recordPlay('home', 'pass-td')">PASS TD (+6)</button>
+          <button class="btn-play td-btn" type="button" onclick="recordPlay('home', 'rush-td')">RUSH TD (+6)</button>
+          <button class="btn-play neutral-btn" type="button" onclick="recordPlay('home', 'pat')">PAT (+1)</button>
+          <button class="btn-play neutral-btn full-width" type="button" onclick="recordPlay('home', 'fg')">FIELD GOAL (+3)</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- AWAY TEAM -->
+    <div class="team-card away">
+      <div class="team-header">
+        <label class="team-name-label" for="away-color-primary">
+          <div class="team-name" id="away-display-name">Oak Grove Eagles</div>
+        </label>
+        <input type="color" id="away-color-primary" class="hidden-color-input" value="#991b1b" onchange="updateTeamColor('away', this.value)">
+        <div class="score-display" id="away-score">0</div>
+      </div>
+      <div class="play-entry-box">
+        <div class="input-row">
+          <input type="number" id="away-player" placeholder="Player #">
+          <input type="number" id="away-yards" placeholder="Yards">
+        </div>
+        <div class="play-type-grid">
+          <button class="btn-play" type="button" onclick="recordPlay('away', 'pass-comp')">PASS COMP</button>
+          <button class="btn-play neutral-btn" type="button" onclick="recordPlay('away', 'pass-inc')">PASS INC</button>
+          <button class="btn-play" type="button" onclick="recordPlay('away', 'rush')">RUN</button>
+          <button class="btn-play td-btn" type="button" onclick="recordPlay('away', 'pass-td')">PASS TD (+6)</button>
+          <button class="btn-play td-btn" type="button" onclick="recordPlay('away', 'rush-td')">RUSH TD (+6)</button>
+          <button class="btn-play neutral-btn" type="button" onclick="recordPlay('away', 'pat')">PAT (+1)</button>
+          <button class="btn-play neutral-btn full-width" type="button" onclick="recordPlay('away', 'fg')">FIELD GOAL (+3)</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Actions Panel -->
+  <section class="actions-panel">
+    <div class="actions-header">
+      <h3>Live Game Play Feed <span id="save-status" style="font-size:0.7rem; font-weight:normal; color:var(--text-muted);"></span></h3>
+      <div class="action-btns">
+        <button class="action-btn export" type="button" onclick="exportSummary('text')">Copy Box Score</button>
+        <button class="action-btn export-secondary" type="button" onclick="exportSummary('csv')">Copy CSV</button>
+      </div>
+    </div>
+    <ul class="log-list" id="log-list">
+      <li class="log-item"><span>Tracker ready. Enter Player jersey number & yardage.</span></li>
+    </ul>
+  </section>
+
+  <!-- Stats Tables -->
+  <section class="stats-summary-grid">
+    <div class="player-table-box">
+      <h3>Home Player Stats</h3>
+      <table>
+        <thead>
+          <tr><th>#</th><th>C/A</th><th>Pass Yds</th><th>Run Att</th><th>Rush Yds</th><th>TDs</th><th>INT</th></tr>
+        </thead>
+        <tbody id="home-player-tbody">
+          <tr><td colspan="7" style="text-align:center;">No player stats recorded yet.</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <div class="player-table-box">
+      <h3>Away Player Stats</h3>
+      <table>
+        <thead>
+          <tr><th>#</th><th>C/A</th><th>Pass Yds</th><th>Run Att</th><th>Rush Yds</th><th>TDs</th><th>INT</th></tr>
+        </thead>
+        <tbody id="away-player-tbody">
+          <tr><td colspan="7" style="text-align:center;">No player stats recorded yet.</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+  <div class="bottom-actions">
+    <button class="action-btn reset" type="button" onclick="openResetModal()">Reset Game</button>
+  </div>
+
+  <div class="modal-overlay" id="reset-modal">
+    <div class="modal-card">
+      <h3>Reset Game Stats?</h3>
+      <p>Are you sure you want to reset all team scores, play logs, and player statistics? This action cannot be undone.</p>
+      <div class="modal-btns">
+        <button class="modal-btn cancel" type="button" onclick="closeResetModal()">Cancel</button>
+        <button class="modal-btn confirm" type="button" onclick="confirmResetStats()">Yes, Reset</button>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    let gameData = {
+      home: { name: "Leland Chargers", score: 0, players: {} },
+      away: { name: "Oak Grove Eagles", score: 0, players: {} }
+    };
+    let playHistory = [];
+    const STORAGE_KEY = 'sideline-tracker-game';
+    const storageAvailable = typeof window.localStorage !== 'undefined';
+
+    function setSaveStatus(text) {
+      const el = document.getElementById('save-status');
+      if (el) el.innerText = text;
+    }
+
+    function saveState() {
+      if (!storageAvailable) {
+        setSaveStatus('(not saved — localStorage unavailable)');
+        return;
+      }
+      try {
+        setSaveStatus('saving...');
+        const payload = { gameData, playHistory, colors: getCurrentColors() };
+        localStorage.setItem(STORAGE_KEY, JSON.stringify(payload));
+        setSaveStatus('saved ✓');
+      } catch (err) {
+        console.error('Save error:', err);
+        setSaveStatus('save failed');
+      }
+    }
+
+    function loadState() {
+      if (!storageAvailable) {
+        setSaveStatus('(not saved — localStorage unavailable)');
+        return;
+      }
+      try {
+        const raw = localStorage.getItem(STORAGE_KEY);
+        if (!raw) {
+          setSaveStatus('');
+          return;
+        }
+        const parsed = JSON.parse(raw);
+        if (parsed.gameData) gameData = parsed.gameData;
+        if (parsed.playHistory) playHistory = parsed.playHistory;
+        document.getElementById('home-score').innerText = gameData.home.score;
+        document.getElementById('away-score').innerText = gameData.away.score;
+        applyStoredColors(parsed.colors);
+        renderPlayLog();
+        renderPlayerTables();
+        setSaveStatus('loaded saved game ✓');
+      } catch (err) {
+        console.error('Load error:', err);
+        setSaveStatus('');
+      }
+    }
+
+    window.addEventListener('DOMContentLoaded', loadState);
+
+    function hexToRgb(hex) {
+      const clean = hex.replace('#', '');
+      return {
+        r: parseInt(clean.substring(0, 2), 16),
+        g: parseInt(clean.substring(2, 4), 16),
+        b: parseInt(clean.substring(4, 6), 16)
+      };
+    }
+    function rgbToHex(r, g, b) {
+      const toHex = (v) => Math.max(0, Math.min(255, Math.round(v))).toString(16).padStart(2, '0');
+      return `#${toHex(r)}${toHex(g)}${toHex(b)}`;
+    }
+    function deriveAccentColor(hex) {
+      const { r, g, b } = hexToRgb(hex);
+      const blend = 0.45;
+      return rgbToHex(r + (255 - r) * blend, g + (255 - g) * blend, b + (255 - b) * blend);
+    }
+    function updateTeamColor(team, hexValue) {
+      const accent = deriveAccentColor(hexValue);
+      document.documentElement.style.setProperty(`--${team}-primary`, hexValue);
+      document.documentElement.style.setProperty(`--${team}-secondary`, accent);
+      saveState();
+    }
+    function applyStoredColors(colors) {
+      if (!colors) return;
+      ['home', 'away'].forEach(team => {
+        if (colors[team] && colors[team].primary) {
+          const primary = colors[team].primary;
+          const accent = deriveAccentColor(primary);
+          document.documentElement.style.setProperty(`--${team}-primary`, primary);
+          document.documentElement.style.setProperty(`--${team}-secondary`, accent);
+          const el = document.getElementById(`${team}-color-primary`);
+          if (el) el.value = primary;
+        }
+      });
+    }
+    function getCurrentColors() {
+      const homeEl = document.getElementById('home-color-primary');
+      const awayEl = document.getElementById('away-color-primary');
+      return {
+        home: { primary: homeEl ? homeEl.value : getComputedStyle(document.documentElement).getPropertyValue('--home-primary').trim() },
+        away: { primary: awayEl ? awayEl.value : getComputedStyle(document.documentElement).getPropertyValue('--away-primary').trim() }
+      };
+    }
+
+    function recordPlay(team, type) {
+      const playerEl = document.getElementById(`${team}-player`);
+      const yardsEl = document.getElementById(`${team}-yards`);
+      const playerNum = playerEl ? String(playerEl.value).trim() : "";
+      const yardsInput = yardsEl ? String(yardsEl.value).trim() : "";
+      const yards = yardsInput === "" ? 0 : parseInt(yardsInput, 10);
+      const pKey = playerNum !== "" ? `#${playerNum}` : "#--";
+      if (playerNum !== "" && !gameData[team].players[pKey]) {
+        gameData[team].players[pKey] = { comp: 0, att: 0, passYards: 0, rush: 0, rushYards: 0, tds: 0, ints: 0 };
+      }
+      let logDesc = "";
+      let pointsAdded = 0;
+      let playerStatDelta = { comp: 0, att: 0, passYards: 0, rush: 0, rushYards: 0, tds: 0, ints: 0 };
+      if (type === 'pass-comp') {
+        playerStatDelta = { comp: 1, att: 1, passYards: yards, rush: 0, rushYards: 0, tds: 0, ints: 0 };
+        logDesc = `Pass Complete for ${yards} yds`;
+      } else if (type === 'pass-inc') {
+        playerStatDelta = { comp: 0, att: 1, passYards: 0, rush: 0, rushYards: 0, tds: 0, ints: 0 };
+        logDesc = `Pass Incomplete`;
+      } else if (type === 'rush') {
+        playerStatDelta = { comp: 0, att: 0, passYards: 0, rush: 1, rushYards: yards, tds: 0, ints: 0 };
+        logDesc = `Run for ${yards} yds`;
+      } else if (type === 'pass-td') {
+        pointsAdded = 6;
+        playerStatDelta = { comp: 1, att: 1, passYards: yards, rush: 0, rushYards: 0, tds: 1, ints: 0 };
+        logDesc = `TOUCHDOWN PASS (+6) (${yards} yds)`;
+      } else if (type === 'rush-td') {
+        pointsAdded = 6;
+        playerStatDelta = { comp: 0, att: 0, passYards: 0, rush: 1, rushYards: yards, tds: 1, ints: 0 };
+        logDesc = `TOUCHDOWN RUN (+6) (${yards} yds)`;
+      } else if (type === 'pat') {
+        pointsAdded = 1;
+        logDesc = `EXTRA POINT (+1)`;
+      } else if (type === 'fg') {
+        pointsAdded = 3;
+        logDesc = `FIELD GOAL (+3) (${yards} yds)`;
+      }
+      gameData[team].score += pointsAdded;
+      if (playerNum !== "") {
+        const p = gameData[team].players[pKey];
+        p.comp += playerStatDelta.comp;
+        p.att += playerStatDelta.att;
+        p.passYards += playerStatDelta.passYards;
+        p.rush += playerStatDelta.rush;
+        p.rushYards += playerStatDelta.rushYards;
+        p.tds += playerStatDelta.tds;
+        p.ints += playerStatDelta.ints;
+      }
+      const playRecord = {
+        id: Date.now(),
+        team: team,
+        teamName: gameData[team].name,
+        playerKey: playerNum !== "" ? pKey : null,
+        type: type,
+        pointsAdded: pointsAdded,
+        delta: playerStatDelta,
+        logDesc: logDesc,
+        scoreState: `${gameData.home.score} - ${gameData.away.score}`
+      };
+      playHistory.unshift(playRecord);
+      const scoreEl = document.getElementById(`${team}-score`);
+      if (scoreEl) scoreEl.innerText = gameData[team].score;
+      if (playerEl) playerEl.value = "";
+      if (yardsEl) yardsEl.value = "";
+      renderPlayLog();
+      renderPlayerTables();
+      saveState();
+    }
+
+    function deletePlay(playId) {
+      const index = playHistory.findIndex(p => p.id === playId);
+      if (index === -1) return;
+      const play = playHistory[index];
+      gameData[play.team].score -= play.pointsAdded;
+      const scoreEl = document.getElementById(`${play.team}-score`);
+      if (scoreEl) scoreEl.innerText = gameData[play.team].score;
+      if (play.playerKey && gameData[play.team].players[play.playerKey]) {
+        const p = gameData[play.team].players[play.playerKey];
+        p.comp -= play.delta.comp;
+        p.att -= play.delta.att;
+        p.passYards -= play.delta.passYards;
+        p.rush -= play.delta.rush;
+        p.rushYards -= play.delta.rushYards;
+        p.tds -= play.delta.tds;
+        p.ints -= play.delta.ints;
+        const hasStats = Object.values(p).some(val => val !== 0);
+        if (!hasStats) {
+          delete gameData[play.team].players[play.playerKey];
+        }
+      }
+      playHistory.splice(index, 1);
+      renderPlayLog();
+      renderPlayerTables();
+      saveState();
+    }
+
+    function renderPlayLog() {
+      const logList = document.getElementById('log-list');
+      if (!logList) return;
+      if (playHistory.length === 0) {
+        logList.innerHTML = `<li class="log-item"><span>Tracker ready. Enter Player jersey number & yardage.</span></li>`;
+        return;
+      }
+      let html = "";
+      playHistory.forEach(play => {
+        const teamColorVar = `var(--${play.team}-primary)`;
+        const playerLabel = play.playerKey ? `Player ${play.playerKey}: ` : '';
+        html += `
+          <li class="log-item">
+            <span class="log-team-tag" style="background-color:${teamColorVar};">${play.teamName || (play.team === 'home' ? gameData.home.name : gameData.away.name)}</span>
+            <span class="log-desc">${playerLabel}${play.logDesc} | <strong>${play.scoreState}</strong></span>
+            <button class="btn-delete-log" onclick="deletePlay(${play.id})">Undo</button>
+          </li>`;
+      });
+      logList.innerHTML = html;
+    }
+
+    function renderPlayerTables() {
+      ['home', 'away'].forEach(team => {
+        const tbody = document.getElementById(`${team}-player-tbody`);
+        if (!tbody) return;
+        const players = gameData[team].players;
+        const pKeys = Object.keys(players).sort();
+        if (pKeys.length === 0) {
+          tbody.innerHTML = `<tr><td colspan="7" style="text-align:center;">No player stats recorded yet.</td></tr>`;
+          return;
+        }
+        let html = "";
+        pKeys.forEach(p => {
+          const stats = players[p];
+          html += `<tr>
+            <td><strong>${p}</strong></td>
+            <td>${stats.comp}/${stats.att}</td>
+            <td>${stats.passYards}</td>
+            <td>${stats.rush}</td>
+            <td>${stats.rushYards}</td>
+            <td>${stats.tds}</td>
+            <td>${stats.ints}</td>
+          </tr>`;
+        });
+        tbody.innerHTML = html;
+      });
+    }
+
+    function openResetModal() { const m = document.getElementById('reset-modal'); if (m) m.style.display = 'flex'; }
+    function closeResetModal() { const m = document.getElementById('reset-modal'); if (m) m.style.display = 'none'; }
+    function confirmResetStats() {
+      closeResetModal();
+      gameData = { home: { name: "Leland Chargers", score: 0, players: {} }, away: { name: "Oak Grove Eagles", score: 0, players: {} } };
+      playHistory = [];
+      const h = document.getElementById('home-score'); if (h) h.innerText = '0';
+      const a = document.getElementById('away-score'); if (a) a.innerText = '0';
+      renderPlayerTables();
+      renderPlayLog();
+      saveState();
+    }
+
+    function exportSummary(format = 'text') {
+      let output = "";
+      if (format === 'csv') {
+        output = "Team,Player,Comp,Att,PassYds,RushAtt,RushYds,TDs,INTs\n";
+        ['home', 'away'].forEach(team => {
+          const tName = gameData[team].name;
+          Object.keys(gameData[team].players).forEach(p => {
+            const s = gameData[team].players[p];
+            output += `"${tName}","${p}",${s.comp},${s.att},${s.passYards},${s.rush},${s.rushYards},${s.tds},${s.ints}\n`;
+          });
+        });
+      } else {
+        output = `GAME STATS & PLAYER BOX SCORE\n========================================\n${gameData.home.name.toUpperCase()}: ${gameData.home.score} PTS\n----------------------------------------\n`;
+        Object.keys(gameData.home.players).forEach(p => {
+          const s = gameData.home.players[p];
+          output += `Player ${p}: ${s.comp}/${s.att} Pass, ${s.passYards} Yds | ${s.rush} Rush, ${s.rushYards} Yds | ${s.tds} TD | ${s.ints} INT\n`;
+        });
+        output += `\n${gameData.away.name.toUpperCase()}: ${gameData.away.score} PTS\n----------------------------------------\n`;
+        Object.keys(gameData.away.players).forEach(p => {
+          const s = gameData.away.players[p];
+          output += `Player ${p}: ${s.comp}/${s.att} Pass, ${s.passYards} Yds | ${s.rush} Rush, ${s.rushYards} Yds | ${s.tds} TD | ${s.ints} INT\n`;
+        });
+        output += `========================================`;
+      }
+      try {
+        if (navigator.clipboard && navigator.clipboard.writeText) {
+          navigator.clipboard.writeText(output).then(() => alert(`Stats copied to clipboard as ${format.toUpperCase()}!`));
+        } else {
+          prompt("Copy your game stats below:", output);
+        }
+      } catch (err) {
+        prompt("Copy your game stats below:", output);
+      }
+    }
+  </script>
+</body>
+</html>
