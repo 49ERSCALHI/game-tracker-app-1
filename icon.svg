@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Simple SVG app icon generated from user logo colors. 512x512 viewBox -->
+<svg xmlns="http://www.w3.org/2000/svg" width="512" height="512" viewBox="0 0 512 512">
+  <rect width="100%" height="100%" fill="#7A0D0D" />
+  <g transform="translate(56,64)">
+    <path d="M200 0 L384 64 L384 240 L200 320 L16 240 L16 64 Z" fill="#000" stroke="#c6a063" stroke-width="12"/>
+    <rect x="36" y="40" width="328" height="160" fill="none" stroke="#c6a063" stroke-width="8" rx="6"/>
+    <text x="200" y="150" font-family="Arial, Helvetica, sans-serif" font-size="68" fill="#fff" font-weight="700" text-anchor="middle" transform="rotate(-8 200,150)">CAL-HI</text>
+    <text x="200" y="210" font-family="Arial, Helvetica, sans-serif" font-size="38" fill="#fff" font-weight="700" text-anchor="middle" transform="rotate(-8 200,210)">SPORTS</text>
+  </g>
+</svg>
