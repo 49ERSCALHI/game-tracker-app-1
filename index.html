@@ -77,13 +77,14 @@
     th, td { padding: 8px 6px; border-bottom: 1px solid var(--border-color); }
     .bottom-actions { margin-top: 20px; text-align: center; }
     .modal-overlay { display: none; position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0, 0, 0, 0.75); z-index: 1000; justify-content: center; align-items: center; padding: 20px; }
-    .modal-card { background-color: var(--card-bg); border: 2px solid var(--away-secondary); border-radius: 12px; padding: 20px; max-width: 400px; width: 100%; text-align: center; box-shadow: 0 10px 30px rgba(0,0,0,0.4); }
+    .modal-card { background-color: var(--card-bg); border: 2px solid var(--away-secondary); border-radius: 12px; padding: 20px; max-width: 400px; width: 100%; text-align: center; box-shadow: 0 10px 40px rgba(0, 0, 0, 0.5); }
     .modal-card h3 { margin-bottom: 10px; color: #f8fafc; }
     .modal-card p { margin-bottom: 20px; color: var(--text-muted); font-size: 0.95rem; line-height: 1.4; }
     .modal-btns { display: flex; gap: 10px; justify-content: center; }
     .modal-btn { flex: 1; padding: 12px; border-radius: 6px; border: none; font-weight: bold; cursor: pointer; }
     .modal-btn.confirm { background-color: #b91c1c; color: white; }
     .modal-btn.cancel { background-color: #475569; color: white; }
+    .modal-input { width: 100%; padding: 10px; margin-bottom: 15px; border-radius: 6px; border: 1px solid var(--border-color); background: #0f172a; color: #fff; font-size: 0.95rem; }
   </style>
 </head>
 <body>
@@ -98,8 +99,8 @@
     <!-- HOME TEAM -->
     <div class="team-card home">
       <div class="team-header">
-        <label class="team-name-label" for="home-color-primary">
-          <div class="team-name" id="home-display-name">Leland Chargers</div>
+        <label class="team-name-label" for="home-color-primary" onclick="openEditNameModal('home')">
+          <div class="team-name" id="home-display-name">Home</div>
         </label>
         <input type="color" id="home-color-primary" class="hidden-color-input" value="#1e3a8a" onchange="updateTeamColor('home', this.value)">
         <div class="score-display" id="home-score">0</div>
@@ -124,8 +125,8 @@
     <!-- AWAY TEAM -->
     <div class="team-card away">
       <div class="team-header">
-        <label class="team-name-label" for="away-color-primary">
-          <div class="team-name" id="away-display-name">Oak Grove Eagles</div>
+        <label class="team-name-label" for="away-color-primary" onclick="openEditNameModal('away')">
+          <div class="team-name" id="away-display-name">Away</div>
         </label>
         <input type="color" id="away-color-primary" class="hidden-color-input" value="#991b1b" onchange="updateTeamColor('away', this.value)">
         <div class="score-display" id="away-score">0</div>
@@ -204,14 +205,26 @@
     </div>
   </div>
 
+  <div class="modal-overlay" id="edit-name-modal">
+    <div class="modal-card">
+      <h3>Edit Team Name</h3>
+      <input type="text" id="edit-name-input" class="modal-input" placeholder="Enter team name" />
+      <div class="modal-btns">
+        <button class="modal-btn cancel" type="button" onclick="closeEditNameModal()">Cancel</button>
+        <button class="modal-btn confirm" type="button" onclick="saveTeamName()">Save</button>
+      </div>
+    </div>
+  </div>
+
   <script>
     let gameData = {
-      home: { name: "Leland Chargers", score: 0, players: {} },
-      away: { name: "Oak Grove Eagles", score: 0, players: {} }
+      home: { name: "Home", score: 0, players: {} },
+      away: { name: "Away", score: 0, players: {} }
     };
     let playHistory = [];
     const STORAGE_KEY = 'sideline-tracker-game';
     const storageAvailable = typeof window.localStorage !== 'undefined';
+    let editingTeam = null;
 
     function setSaveStatus(text) {
       const el = document.getElementById('save-status');
@@ -250,6 +263,8 @@
         if (parsed.playHistory) playHistory = parsed.playHistory;
         document.getElementById('home-score').innerText = gameData.home.score;
         document.getElementById('away-score').innerText = gameData.away.score;
+        document.getElementById('home-display-name').innerText = gameData.home.name;
+        document.getElementById('away-display-name').innerText = gameData.away.name;
         applyStoredColors(parsed.colors);
         renderPlayLog();
         renderPlayerTables();
@@ -306,6 +321,45 @@
         away: { primary: awayEl ? awayEl.value : getComputedStyle(document.documentElement).getPropertyValue('--away-primary').trim() }
       };
     }
+
+    function openEditNameModal(team) {
+      editingTeam = team;
+      const input = document.getElementById('edit-name-input');
+      input.value = gameData[team].name;
+      const modal = document.getElementById('edit-name-modal');
+      if (modal) {
+        modal.style.display = 'flex';
+        input.focus();
+      }
+    }
+
+    function closeEditNameModal() {
+      const modal = document.getElementById('edit-name-modal');
+      if (modal) modal.style.display = 'none';
+      editingTeam = null;
+    }
+
+    function saveTeamName() {
+      if (!editingTeam) return;
+      const input = document.getElementById('edit-name-input');
+      const newName = input.value.trim();
+      if (newName) {
+        gameData[editingTeam].name = newName;
+        document.getElementById(`${editingTeam}-display-name`).innerText = newName;
+        saveState();
+      }
+      closeEditNameModal();
+    }
+
+    document.addEventListener('keydown', (e) => {
+      if (e.key === 'Enter' && document.getElementById('edit-name-modal').style.display === 'flex') {
+        saveTeamName();
+      }
+      if (e.key === 'Escape') {
+        closeEditNameModal();
+        closeResetModal();
+      }
+    });
 
     function recordPlay(team, type) {
       const playerEl = document.getElementById(`${team}-player`);
@@ -455,10 +509,12 @@
     function closeResetModal() { const m = document.getElementById('reset-modal'); if (m) m.style.display = 'none'; }
     function confirmResetStats() {
       closeResetModal();
-      gameData = { home: { name: "Leland Chargers", score: 0, players: {} }, away: { name: "Oak Grove Eagles", score: 0, players: {} } };
+      gameData = { home: { name: "Home", score: 0, players: {} }, away: { name: "Away", score: 0, players: {} } };
       playHistory = [];
       const h = document.getElementById('home-score'); if (h) h.innerText = '0';
       const a = document.getElementById('away-score'); if (a) a.innerText = '0';
+      document.getElementById('home-display-name').innerText = gameData.home.name;
+      document.getElementById('away-display-name').innerText = gameData.away.name;
       renderPlayerTables();
       renderPlayLog();
       saveState();
@@ -476,7 +532,7 @@
           });
         });
       } else {
-        output = `GAME STATS & PLAYER BOX SCORE\n========================================\n${gameData.home.name.toUpperCase()}: ${gameData.home.score} PTS\n---------------------------------------\n`;
+        output = `GAME STATS & PLAYER BOX SCORE\n========================================\n${gameData.home.name.toUpperCase()}: ${gameData.home.score} PTS\n----------------------------------------\n`;
         Object.keys(gameData.home.players).forEach(p => {
           const s = gameData.home.players[p];
           output += `Player ${p}: ${s.comp}/${s.att} Pass, ${s.passYards} Yds | ${s.rush} Rush, ${s.rushYards} Yds | ${s.tds} TD | ${s.ints} INT\n`;
