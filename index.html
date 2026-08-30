@@ -46,6 +46,8 @@
     .team-name-label { display: inline-block; cursor: pointer; }
     .team-name { padding: 4px 10px; border-radius: 6px; border: 1px dashed rgba(255,255,255,0.5); transition: background-color 0.15s; }
     .team-name-label:hover .team-name { background-color: rgba(255,255,255,0.15); }
+    .color-selector { display: inline-block; margin-left: 10px; cursor: pointer; }
+    .color-dot { width: 20px; height: 20px; border-radius: 4px; border: 2px solid rgba(255,255,255,0.7); }
     .hidden-color-input { position: absolute; width: 1px; height: 1px; opacity: 0; pointer-events: none; }
     .play-entry-box { padding: 15px; display: flex; flex-direction: column; gap: 12px; }
     .input-row { display: flex; gap: 8px; flex-wrap: wrap; }
@@ -99,10 +101,13 @@
     <!-- HOME TEAM -->
     <div class="team-card home">
       <div class="team-header">
-        <label class="team-name-label" for="home-color-primary" onclick="openEditNameModal('home')">
-          <div class="team-name" id="home-display-name">Home</div>
-        </label>
-        <input type="color" id="home-color-primary" class="hidden-color-input" value="#1e3a8a" onchange="updateTeamColor('home', this.value)">
+        <div style="display:inline-block;">
+          <div class="team-name" id="home-display-name" onclick="openEditNameModal('home')" style="cursor:pointer;">Home</div>
+          <label class="color-selector" for="home-color-primary">
+            <div class="color-dot" id="home-color-dot" style="background-color:#1e3a8a;"></div>
+          </label>
+          <input type="color" id="home-color-primary" class="hidden-color-input" value="#1e3a8a" onchange="updateTeamColor('home', this.value)">
+        </div>
         <div class="score-display" id="home-score">0</div>
       </div>
       <div class="play-entry-box">
@@ -125,10 +130,13 @@
     <!-- AWAY TEAM -->
     <div class="team-card away">
       <div class="team-header">
-        <label class="team-name-label" for="away-color-primary" onclick="openEditNameModal('away')">
-          <div class="team-name" id="away-display-name">Away</div>
-        </label>
-        <input type="color" id="away-color-primary" class="hidden-color-input" value="#991b1b" onchange="updateTeamColor('away', this.value)">
+        <div style="display:inline-block;">
+          <div class="team-name" id="away-display-name" onclick="openEditNameModal('away')" style="cursor:pointer;">Away</div>
+          <label class="color-selector" for="away-color-primary">
+            <div class="color-dot" id="away-color-dot" style="background-color:#991b1b;"></div>
+          </label>
+          <input type="color" id="away-color-primary" class="hidden-color-input" value="#991b1b" onchange="updateTeamColor('away', this.value)">
+        </div>
         <div class="score-display" id="away-score">0</div>
       </div>
       <div class="play-entry-box">
@@ -298,6 +306,7 @@
       const accent = deriveAccentColor(hexValue);
       document.documentElement.style.setProperty(`--${team}-primary`, hexValue);
       document.documentElement.style.setProperty(`--${team}-secondary`, accent);
+      document.getElementById(`${team}-color-dot`).style.backgroundColor = hexValue;
       saveState();
     }
     function applyStoredColors(colors) {
@@ -310,6 +319,8 @@
           document.documentElement.style.setProperty(`--${team}-secondary`, accent);
           const el = document.getElementById(`${team}-color-primary`);
           if (el) el.value = primary;
+          const dot = document.getElementById(`${team}-color-dot`);
+          if (dot) dot.style.backgroundColor = primary;
         }
       });
     }
